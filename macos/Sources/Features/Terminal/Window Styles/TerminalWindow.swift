@@ -24,6 +24,9 @@ class TerminalWindow: NSWindow {
     /// Update notification UI in titlebar
     private let updateAccessory = NSTitlebarAccessoryViewController()
 
+    /// File browser toggle button in titlebar
+    private let fileBrowserAccessory = NSTitlebarAccessoryViewController()
+
     /// Visual indicator that mirrors the selected tab color.
     private lazy var tabColorIndicator: NSHostingView<TabColorIndicatorView> = {
         let view = NSHostingView(rootView: TabColorIndicatorView(tabColor: tabColor))
@@ -46,8 +49,21 @@ class TerminalWindow: NSWindow {
     /// Whether this window supports the update accessory. If this is false, then views within this
     /// window should determine how to show update notifications.
     var supportsUpdateAccessory: Bool {
-        // Native window supports it.
         true
+    }
+
+    /// Whether this window supports the file browser titlebar accessory.
+    var supportsFileBrowserAccessory: Bool {
+        true
+    }
+
+    /// The file browser open/closed state mirrored from the controller.
+    var fileBrowserIsShowing: Bool = false {
+        didSet {
+            DispatchQueue.main.async {
+                self.viewModel.isFileBrowserShowing = self.fileBrowserIsShowing
+            }
+        }
     }
 
     /// Glass effect view for liquid glass background when transparency is enabled
@@ -152,6 +168,18 @@ class TerminalWindow: NSWindow {
                 ))
                 addTitlebarAccessoryViewController(updateAccessory)
                 updateAccessory.view.translatesAutoresizingMaskIntoConstraints = false
+            }
+
+            if supportsFileBrowserAccessory {
+                fileBrowserAccessory.layoutAttribute = .left
+                fileBrowserAccessory.view = NSHostingView(rootView: FileBrowserAccessoryView(
+                    viewModel: viewModel,
+                    action: { [weak self] in
+                        guard let self else { return }
+                        self.terminalController?.toggleFileBrowser(self)
+                    }))
+                addTitlebarAccessoryViewController(fileBrowserAccessory)
+                fileBrowserAccessory.view.translatesAutoresizingMaskIntoConstraints = false
             }
         }
 
@@ -315,6 +343,10 @@ class TerminalWindow: NSWindow {
             removeTitlebarAccessoryViewController(at: idx)
         }
 
+        if let idx = titlebarAccessoryViewControllers.firstIndex(of: fileBrowserAccessory) {
+            removeTitlebarAccessoryViewController(at: idx)
+        }
+
         // We don't need to do this with the update accessory. I don't know why but
         // everything works fine.
     }
@@ -323,6 +355,10 @@ class TerminalWindow: NSWindow {
         if styleMask.contains(.titled) {
             if titlebarAccessoryViewControllers.firstIndex(of: resetZoomAccessory) == nil {
                 addTitlebarAccessoryViewController(resetZoomAccessory)
+            }
+            if supportsFileBrowserAccessory,
+               titlebarAccessoryViewControllers.firstIndex(of: fileBrowserAccessory) == nil {
+                addTitlebarAccessoryViewController(fileBrowserAccessory)
             }
         }
     }
@@ -628,6 +664,7 @@ extension TerminalWindow {
         @Published var isSurfaceZoomed: Bool = false
         @Published var hasToolbar: Bool = false
         @Published var isMainWindow: Bool = true
+        @Published var isFileBrowserShowing: Bool = false
 
         /// Calculates the top padding based on toolbar visibility and macOS version
         fileprivate var accessoryTopPadding: CGFloat {
@@ -674,6 +711,29 @@ extension TerminalWindow {
             UpdatePill(model: model)
                 .padding(.top, viewModel.accessoryTopPadding)
                 .padding(.trailing, viewModel.accessoryTopPadding)
+        }
+    }
+
+    /// A button that toggles the file browser sidebar.
+    struct FileBrowserAccessoryView: View {
+        @ObservedObject var viewModel: ViewModel
+        let action: () -> Void
+
+        var body: some View {
+            VStack {
+                Button(action: action) {
+                    Image(systemName: "sidebar.left")
+                        .foregroundColor(viewModel.isFileBrowserShowing
+                            ? (viewModel.isMainWindow ? .accentColor : .secondary)
+                            : (viewModel.isMainWindow ? .primary : .secondary))
+                }
+                .buttonStyle(.plain)
+                .help(viewModel.isFileBrowserShowing ? "Hide File Browser" : "Show File Browser")
+                .frame(width: 20, height: 20)
+                Spacer()
+            }
+            .padding(.top, viewModel.accessoryTopPadding)
+            .padding(.leading, 10)
         }
     }
 

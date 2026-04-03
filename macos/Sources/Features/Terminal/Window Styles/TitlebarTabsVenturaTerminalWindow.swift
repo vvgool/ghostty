@@ -5,6 +5,7 @@ class TitlebarTabsVenturaTerminalWindow: TerminalWindow {
     /// Titlebar tabs can't support the update accessory because of the way we layout
     /// the native tabs back into the menu bar.
     override var supportsUpdateAccessory: Bool { false }
+    override var supportsFileBrowserAccessory: Bool { false }
 
     /// This is used to determine if certain elements should be drawn light or dark and should
     /// be updated whenever the window background color or surrounding elements changes.
@@ -58,6 +59,7 @@ class TitlebarTabsVenturaTerminalWindow: TerminalWindow {
 
         updateNewTabButtonOpacity()
         resetZoomToolbarButton.contentTintColor = .controlAccentColor
+        fileBrowserToolbarButton.contentTintColor = fileBrowserIsShowing ? .controlAccentColor : .labelColor
         tab.attributedTitle = attributedTitle
     }
 
@@ -66,6 +68,7 @@ class TitlebarTabsVenturaTerminalWindow: TerminalWindow {
 
         updateNewTabButtonOpacity()
         resetZoomToolbarButton.contentTintColor = .tertiaryLabelColor
+        fileBrowserToolbarButton.contentTintColor = .tertiaryLabelColor
         tab.attributedTitle = attributedTitle
     }
 
@@ -240,8 +243,35 @@ class TitlebarTabsVenturaTerminalWindow: TerminalWindow {
 
     private lazy var resetZoomToolbarButton: NSButton = generateResetZoomButton()
 
-	private func generateResetZoomButton() -> NSButton {
-		let button = NSButton()
+    // MARK: - File Browser Button
+
+    private lazy var fileBrowserToolbarButton: NSButton = generateFileBrowserButton()
+
+    private func generateFileBrowserButton() -> NSButton {
+        let button = NSButton()
+        button.target = nil
+        button.action = #selector(TerminalController.toggleFileBrowser(_:))
+        button.isBordered = false
+        button.allowsExpansionToolTips = true
+        button.toolTip = "Toggle File Browser"
+        button.contentTintColor = .labelColor
+        button.image = NSImage(systemSymbolName: "sidebar.left", accessibilityDescription: "Toggle File Browser")
+        button.frame = NSRect(x: 0, y: 0, width: 20, height: 20)
+        button.translatesAutoresizingMaskIntoConstraints = false
+        button.widthAnchor.constraint(equalToConstant: 20).isActive = true
+        button.heightAnchor.constraint(equalToConstant: 20).isActive = true
+        return button
+    }
+
+    override var fileBrowserIsShowing: Bool {
+        didSet {
+            guard isKeyWindow else { return }
+            fileBrowserToolbarButton.contentTintColor = fileBrowserIsShowing ? .controlAccentColor : .labelColor
+        }
+    }
+
+    private func generateResetZoomButton() -> NSButton {
+        let button = NSButton()
 		button.target = nil
 		button.action = #selector(TerminalController.splitZoom(_:))
 		button.isBordered = false
@@ -326,6 +356,12 @@ class TitlebarTabsVenturaTerminalWindow: TerminalWindow {
             resetZoomItem.view!.removeConstraints(resetZoomItem.view!.constraints)
             resetZoomItem.view!.widthAnchor.constraint(equalToConstant: 22).isActive = true
             resetZoomItem.view!.heightAnchor.constraint(equalToConstant: 20).isActive = true
+        }
+        if let fileBrowserItem = terminalToolbar.items.first(where: { $0.itemIdentifier == .fileBrowser }) {
+            fileBrowserItem.view = fileBrowserToolbarButton
+            fileBrowserItem.view!.removeConstraints(fileBrowserItem.view!.constraints)
+            fileBrowserItem.view!.widthAnchor.constraint(equalToConstant: 22).isActive = true
+            fileBrowserItem.view!.heightAnchor.constraint(equalToConstant: 20).isActive = true
         }
     }
 
@@ -650,6 +686,8 @@ private class TerminalToolbar: NSToolbar, NSToolbarDelegate {
             item.isEnabled = true
         case .resetZoom:
             item = NSToolbarItem(itemIdentifier: .resetZoom)
+        case .fileBrowser:
+            item = NSToolbarItem(itemIdentifier: .fileBrowser)
         default:
             item = NSToolbarItem(itemIdentifier: itemIdentifier)
         }
@@ -658,7 +696,7 @@ private class TerminalToolbar: NSToolbar, NSToolbarDelegate {
     }
 
     func toolbarAllowedItemIdentifiers(_ toolbar: NSToolbar) -> [NSToolbarItem.Identifier] {
-        return [.titleText, .flexibleSpace, .space, .resetZoom]
+        return [.titleText, .flexibleSpace, .space, .resetZoom, .fileBrowser]
     }
 
     func toolbarDefaultItemIdentifiers(_ toolbar: NSToolbar) -> [NSToolbarItem.Identifier] {
@@ -666,7 +704,7 @@ private class TerminalToolbar: NSToolbar, NSToolbarDelegate {
         // getting smaller than the max size so starts clipping. Lucky for us, two of the
         // built-in spacers plus the un-zoom button item seems to exactly match the space
         // on the left that's reserved for the window buttons.
-        return [.flexibleSpace, .titleText, .flexibleSpace]
+        return [.fileBrowser, .flexibleSpace, .titleText, .flexibleSpace, .resetZoom]
     }
 }
 
@@ -710,4 +748,5 @@ private class CenteredDynamicLabel: NSTextField {
 extension NSToolbarItem.Identifier {
     static let resetZoom = NSToolbarItem.Identifier("ResetZoom")
     static let titleText = NSToolbarItem.Identifier("TitleText")
+    static let fileBrowser = NSToolbarItem.Identifier("FileBrowser")
 }

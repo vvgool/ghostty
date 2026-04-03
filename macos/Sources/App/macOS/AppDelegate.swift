@@ -75,6 +75,7 @@ class AppDelegate: NSObject,
     @IBOutlet private var menuQuickTerminal: NSMenuItem?
     @IBOutlet private var menuTerminalInspector: NSMenuItem?
     @IBOutlet private var menuCommandPalette: NSMenuItem?
+    @IBOutlet private var menuFileBrowser: NSMenuItem?
 
     @IBOutlet private var menuEqualizeSplits: NSMenuItem?
     @IBOutlet private var menuMoveSplitDividerUp: NSMenuItem?
@@ -1117,6 +1118,7 @@ extension AppDelegate {
         self.menuResetFontSize?.setImageIfDesired(systemSymbolName: "textformat.size")
         self.menuDecreaseFontSize?.setImageIfDesired(systemSymbolName: "textformat.size.smaller")
         self.menuCommandPalette?.setImageIfDesired(systemSymbolName: "filemenu.and.selection")
+        self.menuFileBrowser?.setImageIfDesired(systemSymbolName: "sidebar.left")
         self.menuQuickTerminal?.setImageIfDesired(systemSymbolName: "apple.terminal")
         self.menuChangeTabTitle?.setImageIfDesired(systemSymbolName: "pencil.line")
         self.menuTerminalInspector?.setImageIfDesired(systemSymbolName: "scope")
@@ -1198,6 +1200,8 @@ extension AppDelegate {
         syncMenuShortcut(config, action: "toggle_window_float_on_top", menuItem: self.menuFloatOnTop)
         syncMenuShortcut(config, action: "inspector:toggle", menuItem: self.menuTerminalInspector)
         syncMenuShortcut(config, action: "toggle_command_palette", menuItem: self.menuCommandPalette)
+        self.menuFileBrowser?.keyEquivalent = "e"
+        self.menuFileBrowser?.keyEquivalentModifierMask = [.control, .shift]
 
         syncMenuShortcut(config, action: "toggle_secure_input", menuItem: self.menuSecureInput)
 

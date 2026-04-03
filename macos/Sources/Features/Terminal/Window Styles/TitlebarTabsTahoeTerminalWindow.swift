@@ -12,6 +12,16 @@ class TitlebarTabsTahoeTerminalWindow: TransparentTitlebarTerminalWindow, NSTool
     /// Titlebar tabs can't support the update accessory because of the way we layout
     /// the native tabs back into the menu bar.
     override var supportsUpdateAccessory: Bool { false }
+    override var supportsFileBrowserAccessory: Bool { false }
+
+    override var fileBrowserIsShowing: Bool {
+        didSet {
+            DispatchQueue.main.async { [weak self] in
+                guard let self else { return }
+                self.viewModel.isFileBrowserShowing = self.fileBrowserIsShowing
+            }
+        }
+    }
 
     deinit {
         tabBarObserver = nil
@@ -228,11 +238,11 @@ class TitlebarTabsTahoeTerminalWindow: TransparentTitlebarTerminalWindow, NSTool
     // MARK: NSToolbarDelegate
 
     func toolbarAllowedItemIdentifiers(_ toolbar: NSToolbar) -> [NSToolbarItem.Identifier] {
-        return [.title, .flexibleSpace, .space]
+        return [.title, .flexibleSpace, .space, .fileBrowser]
     }
 
     func toolbarDefaultItemIdentifiers(_ toolbar: NSToolbar) -> [NSToolbarItem.Identifier] {
-        return [.flexibleSpace, .title, .flexibleSpace]
+        return [.fileBrowser, .flexibleSpace, .title, .flexibleSpace]
     }
 
     func toolbar(_ toolbar: NSToolbar,
@@ -252,6 +262,15 @@ class TitlebarTabsTahoeTerminalWindow: TransparentTitlebarTerminalWindow, NSTool
             item.isBordered = false
 
             return item
+        case .fileBrowser:
+            let item = NSToolbarItem(itemIdentifier: .fileBrowser)
+            item.view = NSHostingView(rootView: FileBrowserItem(viewModel: viewModel) { [weak self] in
+                guard let self else { return }
+                self.terminalController?.toggleFileBrowser(self)
+            })
+            item.isBordered = false
+            item.isEnabled = true
+            return item
         default:
             return NSToolbarItem(itemIdentifier: itemIdentifier)
         }
@@ -264,6 +283,7 @@ class TitlebarTabsTahoeTerminalWindow: TransparentTitlebarTerminalWindow, NSTool
         @Published var title: String = "👻 Ghostty"
         @Published var hasTabBar: Bool = false
         @Published var isMainWindow: Bool = true
+        @Published var isFileBrowserShowing: Bool = false
     }
 }
 
@@ -305,6 +325,26 @@ extension TitlebarTabsTahoeTerminalWindow {
                 .truncationMode(.tail)
                 .frame(maxWidth: .greatestFiniteMagnitude, alignment: .center)
                 .opacity(viewModel.hasTabBar ? 0 : 1) // hide when in fullscreen mode, where title bar will appear in the leading area under window buttons
+        }
+    }
+}
+
+extension TitlebarTabsTahoeTerminalWindow {
+    /// Displays the file browser toggle button
+    struct FileBrowserItem: View {
+        @ObservedObject var viewModel: ViewModel
+        let action: () -> Void
+
+        var body: some View {
+            Button(action: action) {
+                Image(systemName: "sidebar.left")
+                    .foregroundStyle(viewModel.isFileBrowserShowing
+                        ? (viewModel.isMainWindow ? Color.accentColor : Color.secondary)
+                        : (viewModel.isMainWindow ? Color.primary : Color.secondary))
+            }
+            .buttonStyle(.plain)
+            .help(viewModel.isFileBrowserShowing ? "Hide File Browser" : "Show File Browser")
+            .frame(width: 20, height: 20)
         }
     }
 }

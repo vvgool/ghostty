@@ -27,6 +27,7 @@
                 <outlet property="menuCopy" destination="Jqf-pv-Zcu" id="bKd-1C-oy9"/>
                 <outlet property="menuDecreaseFontSize" destination="kzb-SZ-dOA" id="Y1B-Vh-6Z2"/>
                 <outlet property="menuEqualizeSplits" destination="3gH-VD-vL9" id="SiZ-ce-FOF"/>
+                <outlet property="menuFileBrowser" destination="Q8X-fb-tgl" id="1Ot-8Q-xfb"/>
                 <outlet property="menuFind" destination="nwE-0w-30h" id="idg-Nc-apE"/>
                 <outlet property="menuFindNext" destination="XqU-X8-q32" id="vNh-AH-6gZ"/>
                 <outlet property="menuFindParent" destination="cE3-Bt-FcH" id="2dc-ok-hgH"/>
@@ -336,6 +337,12 @@
                                 <modifierMask key="keyEquivalentModifierMask"/>
                                 <connections>
                                     <action selector="toggleCommandPalette:" target="-1" id="FcT-XD-gM1"/>
+                                </connections>
+                            </menuItem>
+                            <menuItem title="Toggle File Browser" id="Q8X-fb-tgl">
+                                <modifierMask key="keyEquivalentModifierMask"/>
+                                <connections>
+                                    <action selector="toggleFileBrowser:" target="-1" id="qFb-gT-o8e"/>
                                 </connections>
                             </menuItem>
                             <menuItem title="Change Tab Title..." id="iac-lh-Cl7">
